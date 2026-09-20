@@ -1,28 +1,40 @@
 {
-  // hfw 워크플로우 설정
+  // ============================================================
+  // hfw.jsonc — Harness Framework Workflow 설정
+  // ============================================================
+  // 목적: Claude Code의 /autopilot 슬래시 커맨드와 연동하여
+  //       기획 → 설계 → 구현 → QA 전체 사이클을 자동화한다.
+  //
+  // 사용법:
+  //   /autopilot --workflow full-cycle "기능 설명"
+  //   /autopilot --workflow fast-build "TRD 작성 후 바로 구현할 내용"
+  //   /autopilot --workflow review-refactor "리뷰/리팩토링할 내용"
+  //
   // 참고: https://github.com/Yeachan-Heo/oh-my-claudecode
-  // 이 파일은 .claude/hfw.jsonc 에 위치한다
+  // ============================================================
 
   "autopilot": {
     // ──────────────────────────────────────────────
     // 워크플로우 정의 (Named Autopilot Stage Profiles)
-    // 사용법: /autopilot --workflow <name> "작업 설명"
     // ──────────────────────────────────────────────
     "workflows": {
 
       // 전체 개발 사이클: 기획 → 아키텍처 → 구현 → QA
+      // 언제: 새로운 기능을 처음부터 설계하고 구현할 때
       "full-cycle": {
         "version": 1,
         "stages": ["ralplan", "execution", "qa"]
       },
 
-      // 빠른 기능 구현: 계획 → 구현 (TRD 작성 후 바로 구현할 때)
+      // 빠른 기능 구현: 계획 → 구현
+      // 언제: TRD가 이미 작성되어 있고, 바로 구현만 필요할 때
       "fast-build": {
         "version": 1,
         "stages": ["ralplan", "execution"]
       },
 
-      // 리뷰 & 리팩토링: 계획 → 구현 → Ralph(재검토) → QA
+      // 리뷰 & 리팩토링: 계획 → 구현 → 재검토 → QA
+      // 언제: 기존 코드를 리팩토링하거나 코드 품질을 개선할 때
       "review-refactor": {
         "version": 1,
         "stages": ["ralplan", "execution", "ralph", "qa"]
@@ -45,17 +57,17 @@
         // 아키텍처 & 코드 리뷰
         "architect": {
           "model": "claude",
-          "instruction": "ADR/TRD 검토 후 아키텍처 일관성 확인. CLAUDE.md의 CRITICAL 규칙 준수 여부 반드시 검증"
+          "instruction": "CLAUDE.md 및 docs/02_ADR.md를 먼저 읽어라. CRITICAL 규칙 준수 여부 반드시 검증. TRD에 설계 없이 구현 시작 금지."
         },
         // QA & 테스트
         "qa": {
           "model": "claude",
-          "instruction": "TRD의 Implementation Checklist 기준으로 검증. 에러 처리, 보안 체크리스트 항목 누락 없이 확인"
+          "instruction": "TRD의 Implementation Checklist와 Error Handling 표를 기준으로 검증하라. 보안 체크리스트(비밀번호 로깅, HTTPS 등) 누락 없이 확인. validate-arch 스크립트 실행 필수."
         },
         // 코드 작성 실행자
         "executor": {
           "model": "claude",
-          "instruction": "TRD 설계를 정확히 따라 구현. 임의로 Out of Scope 기능 추가 금지"
+          "instruction": "TRD 설계를 정확히 따라 구현하라. Out of Scope 기능 임의 추가 금지. services/ 레이어를 통해서만 DB 접근하라."
         }
       }
     }
@@ -71,22 +83,25 @@
 
   // ──────────────────────────────────────────────
   // 프로젝트 컨텍스트 설정
+  // AI 에이전트가 작업 전 반드시 로드해야 할 파일 목록
   // ──────────────────────────────────────────────
   "project": {
-    // AI가 항상 먼저 읽어야 할 컨텍스트 파일 (우선순위 순)
+    // 우선순위 순으로 먼저 읽을 컨텍스트 파일
     "contextFiles": [
-      "CLAUDE.md",
-      "docs/01_PRD.md",
-      "docs/02_ADR.md",
-      "docs/03_TRD.md"
+      "CLAUDE.md",           // #1: CRITICAL 원칙 & 아키텍처 규칙
+      "docs/01_PRD.md",      // #2: MVP 스코프 확인 (Out of Scope 방지)
+      "docs/02_ADR.md",      // #3: 기술 스택 & 아키텍처 결정
+      "docs/03_TRD.md"       // #4: 기능별 세부 설계 확인
     ],
 
-    // QA 단계에서 실행할 검증 스크립트
+    // QA 단계에서 자동 실행할 검증 커맨드 (순서 중요)
     "qaCommands": [
-      "npm run lint",
-      "npm run type-check",
-      "npm run test",
-      "bash scripts/validate-arch.sh"
+      "npm run type-check",                        // TypeScript 타입 오류 먼저
+      "npm run lint",                              // ESLint 규칙
+      "npm run test",                              // 유닛 테스트
+      "bash scripts/validate-arch.sh"             // 아키텍처 규칙 준수 검사
+      // Windows 환경에서는 아래 명령어 사용:
+      // "powershell -ExecutionPolicy Bypass -File scripts/validate-arch.ps1"
     ]
   }
 }

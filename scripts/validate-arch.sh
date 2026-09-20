@@ -19,23 +19,36 @@ echo "======================================"
 
 # ──────────────────────────────────────────────────────────────────
 # RULE 1: Client Component에서 외부 API 직접 호출 금지
+# Detects: fetch() literal URL, axios/ky/got HTTP clients
 # CRITICAL: CLAUDE.md 규칙 #1
 # ──────────────────────────────────────────────────────────────────
 echo ""
 echo "📋 RULE 1: Client Component에서 외부 API 직접 호출 검사..."
 
-# 'use client' 가 있는 파일에서 fetch()를 http/https URL로 호출하는 경우 검사
-# (단순 패턴 매칭이므로 false positive 가능 — 수동 확인 필요)
-CLIENT_API_VIOLATIONS=$(grep -rl "'use client'" src/ 2>/dev/null | \
-  xargs grep -l "fetch('http" 2>/dev/null | \
-  xargs grep -l "fetch(\"http" 2>/dev/null || true)
+# 1) 'use client' 파일에서 fetch() + http/https 리터럴 URL 호출
+CLIENT_FETCH_VIOLATIONS=$(grep -rl "'use client'\|\"use client\"" src/ 2>/dev/null | \
+  xargs grep -l "fetch(['\"]http" 2>/dev/null || true)
 
-if [ -n "$CLIENT_API_VIOLATIONS" ]; then
-  echo -e "${RED}❌ 위반 발견: Client Component에서 외부 URL fetch 호출${NC}"
-  echo "$CLIENT_API_VIOLATIONS"
+# 2) axios / ky / got 등 HTTP 클라이언트를 'use client' 파일에서 직접 호출
+CLIENT_HTTP_VIOLATIONS=$(grep -rl "'use client'\|\"use client\"" src/ 2>/dev/null | \
+  xargs grep -l "\(axios\|ky\|got\)\.\(get\|post\|put\|patch\|delete\)(" 2>/dev/null || true)
+
+# 3) fetch() 변수 경유 호출 (false-positive 가능 — WARNING 처리)
+CLIENT_FETCH_VAR_WARNINGS=$(grep -rl "'use client'\|\"use client\"" src/ 2>/dev/null | \
+  xargs grep -l "fetch([a-zA-Z_\$]" 2>/dev/null || true)
+
+if [ -n "$CLIENT_FETCH_VIOLATIONS" ] || [ -n "$CLIENT_HTTP_VIOLATIONS" ]; then
+  echo -e "${RED}❌ 위반 발견: Client Component에서 외부 API 직접 호출 (fetch/axios/ky/got)${NC}"
+  echo "$CLIENT_FETCH_VIOLATIONS $CLIENT_HTTP_VIOLATIONS"
   ERRORS=$((ERRORS + 1))
 else
   echo -e "${GREEN}✅ 통과${NC}"
+fi
+
+if [ -n "$CLIENT_FETCH_VAR_WARNINGS" ]; then
+  echo -e "${YELLOW}⚠️  경고: Client Component에서 변수 경유 fetch() 호출 의심 — 수동 확인 필요${NC}"
+  echo "$CLIENT_FETCH_VAR_WARNINGS"
+  WARNINGS=$((WARNINGS + 1))
 fi
 
 # ──────────────────────────────────────────────────────────────────
@@ -80,17 +93,32 @@ fi
 
 # ──────────────────────────────────────────────────────────────────
 # RULE 4: DB 접근은 services/ 레이어 경유 확인
+# Detects: Supabase, Prisma, Drizzle, Knex direct calls
 # CRITICAL: CLAUDE.md 규칙 #5
 # ──────────────────────────────────────────────────────────────────
 echo ""
 echo "📋 RULE 4: DB 직접 접근 (services 레이어 우회) 검사..."
 
-# components/ 또는 app/page 파일에서 supabase from() 직접 호출하는 경우
-DB_VIOLATIONS=$(grep -rn "supabase\.from(" src/components/ src/app/ 2>/dev/null | \
+# Supabase: supabase.from()
+SUPABASE_VIOLATIONS=$(grep -rn "supabase\.from(" src/components/ src/app/ 2>/dev/null | \
   grep -v "services/" || true)
 
+# Prisma: prisma.<model>. or new PrismaClient()
+PRISMA_VIOLATIONS=$(grep -rn "prisma\.[a-zA-Z]\+\.\|new PrismaClient(" src/components/ src/app/ 2>/dev/null | \
+  grep -v "services/" || true)
+
+# Drizzle: db.select() / db.insert() / db.update() / db.delete()
+DRIZZLE_VIOLATIONS=$(grep -rn "db\.\(select\|insert\|update\|delete\)(" src/components/ src/app/ 2>/dev/null | \
+  grep -v "services/" || true)
+
+# Knex: knex('<table>')
+KNEX_VIOLATIONS=$(grep -rn "knex(['\"]" src/components/ src/app/ 2>/dev/null | \
+  grep -v "services/" || true)
+
+DB_VIOLATIONS="$SUPABASE_VIOLATIONS$PRISMA_VIOLATIONS$DRIZZLE_VIOLATIONS$KNEX_VIOLATIONS"
+
 if [ -n "$DB_VIOLATIONS" ]; then
-  echo -e "${RED}❌ 위반 발견: components 또는 pages에서 DB 직접 접근${NC}"
+  echo -e "${RED}❌ 위반 발견: components 또는 pages에서 DB 직접 접근 (Supabase/Prisma/Drizzle/Knex)${NC}"
   echo "$DB_VIOLATIONS" | head -10
   echo "  → services/ 레이어를 통해 접근해야 합니다"
   ERRORS=$((ERRORS + 1))

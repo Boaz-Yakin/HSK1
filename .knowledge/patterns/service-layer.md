@@ -1,4 +1,6 @@
 # Service 레이어 패턴
+<!-- 적용 스택: Next.js 15 (App Router) + Supabase (PostgreSQL) -->
+<!-- 다른 스택 사용 시: service-layer-prisma.md, service-layer-drizzle.md 등으로 별도 파일 작성 권장 -->
 <!-- 모든 비즈니스 로직과 DB 접근은 이 레이어를 통한다 -->
 
 ## 기본 구조

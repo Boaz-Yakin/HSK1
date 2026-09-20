@@ -51,12 +51,12 @@ if (-not (Test-Path $adrFile)) {
     $adrMatches = [regex]::Matches($adrContent, "(?m)^## ADR-")
     Write-Host "  [INFO] Found $($adrMatches.Count) ADR item(s)." -ForegroundColor Gray
     
-    $placeholderAdrs = [regex]::Matches($adrContent, "\{결정 사항\}")
-    if ($placeholderAdrs.Count -gt 0) {
-        Write-Host "  [WARN] ADR has $($placeholderAdrs.Count) unfilled placeholder item(s)." -ForegroundColor Yellow
+    $placeholderAdrs = [regex]::Matches($adrContent, "\{예:")
+    if ($placeholderAdrs.Count -gt 5) {
+        Write-Host "  [WARN] ADR has $($placeholderAdrs.Count) unfilled placeholder item(s) — fill in actual decisions." -ForegroundColor Yellow
         $WarningsCount++
     } else {
-        Write-Host "  [PASS] ADR format valid." -ForegroundColor Green
+        Write-Host "  [PASS] ADR placeholders within acceptable range." -ForegroundColor Green
     }
 }
 

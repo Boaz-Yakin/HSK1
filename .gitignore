@@ -46,3 +46,17 @@ yarn-error.log*
 # 임시 파일
 *.tmp
 *.temp
+
+# 패키지 매니저 잠금 파일 (팀 정책에 따라 커밋 여부 결정)
+# pnpm-lock.yaml  # pnpm 사용 시 커밋하는 것을 권장 (주석 해제 시 무시)
+# yarn.lock       # yarn 사용 시 커밋하는 것을 권장 (주석 해제 시 무시)
+
+# Sentry auth token (절대 커밋 금지)
+.sentryclirc
+
+# Vercel 로컬 설정 (팀 공유 불필요)
+.vercel/
+
+# Next.js 타입 생성 캐시
+*.tsbuildinfo
+next-env.d.ts

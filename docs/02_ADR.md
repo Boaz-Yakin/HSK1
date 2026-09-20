@@ -1,4 +1,4 @@
-﻿# Architecture Decision Records
+# Architecture Decision Records
 <!-- ADR: "어떤 시스템/기술 구조를 가져가는가?" -->
 <!-- 각 결정은 번복하기 어려운 선택들이다. 충분한 근거와 트레이드오프를 반드시 기록한다 -->
 
@@ -128,6 +128,29 @@
 ### Consequences
 ### Rejected Alternatives
 ```
+
+---
+
+## 폐기(Superseded / Deprecated) ADR 처리 방법
+
+> [!IMPORTANT]
+> ADR은 삭제하지 않는다. 과거의 결정 기록은 히스토리로서 가치가 있다.
+
+1. **기술 결정이 교체될 때**: 기존 ADR 상단 상태를 `Superseded by ADR-{새번호}`로 변경하고, 새 ADR을 추가한다.
+
+   ```markdown
+   ## ADR-002: Supabase 선택
+   **상태**: ~~Accepted~~ → **Superseded by ADR-007**
+   **결정일**: 2024-01-15
+   ```
+
+2. **더 이상 유효하지 않은 결정**: 상태를 `Deprecated`로 변경하고 사유를 기재한다.
+
+   ```markdown
+   **상태**: Deprecated — {예: 서비스 종료로 인해 무효화됨. ADR-008 참고}
+   ```
+
+3. **누적이 많아질 경우**: `docs/adr-archive/` 폴더를 만들어 상태가 `Deprecated`인 ADR을 이동한다. 단, `02_ADR.md` 내에 이동 사실과 링크를 남겨야 한다.
 
 ---
 

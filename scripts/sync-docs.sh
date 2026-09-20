@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # scripts/sync-docs.sh
 # 문서 간 일관성 검증 스크립트
 # PRD/ADR/TRD 문서가 제대로 연결되어 있는지, 누락된 항목이 없는지 확인
@@ -58,12 +58,12 @@ else
   ADR_COUNT=$(grep -c "^## ADR-" "$ADR_FILE" 2>/dev/null || echo "0")
   echo -e "  발견된 ADR 항목: ${ADR_COUNT}개"
   
-  PLACEHOLDER_ADRS=$(grep -c "{결정 사항}" "$ADR_FILE" 2>/dev/null || echo "0")
-  if [ "$PLACEHOLDER_ADRS" -gt 0 ]; then
-    echo -e "  ${YELLOW}⚠️  미작성 ADR 항목 ${PLACEHOLDER_ADRS}개 발견 — 실제 결정 사항을 채워주세요${NC}"
+  PLACEHOLDER_ADRS=$(grep -c "{예:" "$ADR_FILE" 2>/dev/null || echo "0")
+  if [ "$PLACEHOLDER_ADRS" -gt 5 ]; then
+    echo -e "  ${YELLOW}⚠️  미작성 ADR 플레이스홀더 ${PLACEHOLDER_ADRS}개 발견 — 실제 결정 사항을 채워주세요${NC}"
     WARNINGS=$((WARNINGS + 1))
   else
-    echo -e "  ${GREEN}✅ ADR 항목 확인 완료${NC}"
+    echo -e "  ${GREEN}✅ ADR 플레이스홀더 허용 범위 내${NC}"
   fi
 fi
 

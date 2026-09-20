@@ -1,5 +1,6 @@
 # API Route 핸들러 패턴
-<!-- Next.js 15 App Router 기준 -->
+<!-- 적용 스택: Next.js 15 (App Router) + Supabase Auth -->
+<!-- 다른 스택 사용 시: api-route-express.md 등으로 별도 파일 작성 권장 -->
 
 ## 기본 구조 (표준 패턴)
 

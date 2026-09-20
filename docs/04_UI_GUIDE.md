@@ -1,4 +1,4 @@
-﻿# UI/UX 디자인 가이드
+# UI/UX 디자인 가이드
 <!-- 컴포넌트 작성 전 반드시 읽어라. 디자인 일관성은 이 문서에서 시작된다 -->
 <!-- 상세 UX 설계(플로우, 인터랙션)는 docs/03_TRD.md의 각 기능별 섹션을 참고한다 -->
 
@@ -74,14 +74,19 @@
 ```
 
 ### 타입 스케일
-| 역할 | 클래스 (Tailwind) | 사용처 |
-|------|------------------|--------|
-| Page Title | `text-3xl font-semibold tracking-tight` | 페이지 h1 |
-| Section Title | `text-xl font-medium` | 섹션 제목 |
-| Card Title | `text-sm font-medium text-muted` | 카드 헤더 |
-| Body | `text-sm leading-relaxed` | 일반 본문 |
-| Caption | `text-xs text-muted` | 날짜, 부연 설명 |
-| Code | `font-mono text-sm` | 코드, 값 |
+<!-- Tailwind 미사용 프로젝트: 아래 CSS 값 열을 직접 사용하세요 -->
+| 역할 | 클래스 (Tailwind) | CSS 값 | 사용처 |
+|------|------------------|--------|--------|
+| Page Title | `text-3xl font-semibold tracking-tight` | `font-size: 1.875rem; font-weight: 600; letter-spacing: -0.025em` | 페이지 h1 |
+| Section Title | `text-xl font-medium` | `font-size: 1.25rem; font-weight: 500` | 섹션 제목 |
+| Card Title | `text-sm font-medium text-muted` | `font-size: 0.875rem; font-weight: 500; color: var(--text-muted)` | 카드 헤더 |
+| Body | `text-sm leading-relaxed` | `font-size: 0.875rem; line-height: 1.625` | 일반 본문 |
+| Caption | `text-xs text-muted` | `font-size: 0.75rem; color: var(--text-muted)` | 날짜, 부연 설명 |
+| Code | `font-mono text-sm` | `font-family: var(--font-mono); font-size: 0.875rem` | 코드, 값 |
+
+> [!NOTE]
+> **Tailwind 미사용 프로젝트**: CSS 값 열을 `:root` 또는 전역 CSS에 커스텀 프로퍼티로 정의하여 사용하세요.  
+> 예: `--text-page-title: 1.875rem;` → `font-size: var(--text-page-title);`
 
 ---
 

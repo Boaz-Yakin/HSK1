@@ -20,6 +20,8 @@ if (-not (Test-Path "src")) {
 
 # -------------------------------------------------------------------
 # RULE 1: Client components calling external APIs directly
+# Detects: fetch() with literal URL, variable, template literal,
+#          and common HTTP clients (axios, ky, got)
 # -------------------------------------------------------------------
 Write-Host "`n[RULE 1] Checking external API calls in Client Components..." -ForegroundColor White
 
@@ -31,17 +33,29 @@ $clientFiles = Get-ChildItem -Path "src" -Recurse -Include *.ts, *.tsx, *.js, *.
 $rule1Violations = @()
 foreach ($f in $clientFiles) {
     $c = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
-    if ($c -match "fetch\(\s*['""]https?://") {
+    # 1) fetch()로 http/https 리터럴 URL 직접 호출
+    $hasFetchLiteral  = $c -match "fetch\(\s*['"`"]https?://"
+    # 2) fetch()로 변수/템플릿 리터럴 경유 호출 (변수명 앞에 https 포함 여부로 추론)
+    $hasFetchVar      = $c -match "fetch\(\s*[a-zA-Z_`$]"
+    # 3) axios / ky / got 등 HTTP 클라이언트 직접 호출
+    $hasHttpClient    = $c -match "(axios|ky|got)\.(get|post|put|patch|delete)\("
+    $hasAxiosCreate   = $c -match "axios\.create\("
+
+    if ($hasFetchLiteral -or $hasHttpClient -or $hasAxiosCreate) {
         $rule1Violations += $f.FullName
+    } elseif ($hasFetchVar) {
+        # 변수 경유는 false-positive 가능성 있어 WARNING 처리
+        Write-Host "[WARN] Possible external fetch via variable in: $($f.FullName)" -ForegroundColor Yellow
+        $WarningsCount++
     }
 }
 
 if ($rule1Violations.Count -gt 0) {
-    Write-Host "[FAIL] Client Component calls external URL with fetch():" -ForegroundColor Red
+    Write-Host "[FAIL] Client Component calls external API directly (fetch/axios/ky/got):" -ForegroundColor Red
     $rule1Violations | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     $ErrorsCount++
 } else {
-    Write-Host "[PASS] No direct external fetch calls in Client Components." -ForegroundColor Green
+    Write-Host "[PASS] No direct external API calls in Client Components." -ForegroundColor Green
 }
 
 # -------------------------------------------------------------------
@@ -97,6 +111,8 @@ if ($rule3Violations.Count -gt 0) {
 
 # -------------------------------------------------------------------
 # RULE 4: Direct DB access bypassing services/ layer
+# Detects: Supabase, Prisma, Drizzle, Knex direct calls in
+#          components/ or app/ (outside services/)
 # -------------------------------------------------------------------
 Write-Host "`n[RULE 4] Checking direct DB access bypassing services layer..." -ForegroundColor White
 
@@ -106,7 +122,16 @@ foreach ($f in $compFiles) {
     $normalized = $f.FullName.Replace("\", "/")
     if ($normalized -match "/services/") { continue }
     $c = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
-    if ($c -match "supabase\.from\(") {
+    # Supabase: supabase.from()
+    $hasSupabase = $c -match "supabase\.from\("
+    # Prisma: prisma.<model>. or new PrismaClient()
+    $hasPrisma   = $c -match "(prisma\.[a-zA-Z]+\.|new PrismaClient\()"
+    # Drizzle: db.select() / db.insert() / db.update() / db.delete()
+    $hasDrizzle  = $c -match "db\.(select|insert|update|delete)\("
+    # Knex: knex('<table>')
+    $hasKnex     = $c -match "knex\(['"`"]"
+
+    if ($hasSupabase -or $hasPrisma -or $hasDrizzle -or $hasKnex) {
         $rule4Violations += $f.FullName
     }
 }
