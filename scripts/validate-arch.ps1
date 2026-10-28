@@ -19,39 +19,40 @@ if (-not (Test-Path "src")) {
 }
 
 # -------------------------------------------------------------------
-# RULE 1: Client components calling external APIs directly
-# Detects: fetch() with literal URL, variable, template literal,
-#          and common HTTP clients (axios, ky, got)
+# Helper: Gather client files
 # -------------------------------------------------------------------
-Write-Host "`n[RULE 1] Checking external API calls in Client Components..." -ForegroundColor White
-
 $clientFiles = Get-ChildItem -Path "src" -Recurse -Include *.ts, *.tsx, *.js, *.jsx -ErrorAction SilentlyContinue | Where-Object {
     $c = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
     $c -match "['""]use client['""]"
 }
 
+# -------------------------------------------------------------------
+# RULE 1: Client components calling external APIs directly
+# Detects: fetch() with external http(s) URL, or external HTTP clients
+# (Relative internal API calls like fetch('/api/...') are allowed)
+# -------------------------------------------------------------------
+Write-Host "`n[RULE 1] Checking external API calls in Client Components..." -ForegroundColor White
+
 $rule1Violations = @()
 foreach ($f in $clientFiles) {
-    $c = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
-    # 1) fetch()로 http/https 리터럴 URL 직접 호출
-    $hasFetchLiteral  = $c -match "fetch\(\s*['"`"]https?://"
-    # 2) fetch()로 변수/템플릿 리터럴 경유 호출 (변수명 앞에 https 포함 여부로 추론)
-    $hasFetchVar      = $c -match "fetch\(\s*[a-zA-Z_`$]"
-    # 3) axios / ky / got 등 HTTP 클라이언트 직접 호출
-    $hasHttpClient    = $c -match "(axios|ky|got)\.(get|post|put|patch|delete)\("
-    $hasAxiosCreate   = $c -match "axios\.create\("
+    $lines = Get-Content $f.FullName -ErrorAction SilentlyContinue
+    $lineNum = 0
+    foreach ($line in $lines) {
+        $lineNum++
+        # 1) fetch() with literal external http/https URL
+        $hasExternalFetch = $line -match "fetch\(\s*['`"]https?://"
+        # 2) direct axios/ky/got calls to external http/https
+        $hasExternalClient = $line -match "(axios|ky|got)\.(get|post|put|patch|delete)\(\s*['`"]https?://"
+        $hasAxiosCreate = $line -match "axios\.create\("
 
-    if ($hasFetchLiteral -or $hasHttpClient -or $hasAxiosCreate) {
-        $rule1Violations += $f.FullName
-    } elseif ($hasFetchVar) {
-        # 변수 경유는 false-positive 가능성 있어 WARNING 처리
-        Write-Host "[WARN] Possible external fetch via variable in: $($f.FullName)" -ForegroundColor Yellow
-        $WarningsCount++
+        if ($hasExternalFetch -or $hasExternalClient -or $hasAxiosCreate) {
+            $rule1Violations += "$($f.FullName):$lineNum $line"
+        }
     }
 }
 
 if ($rule1Violations.Count -gt 0) {
-    Write-Host "[FAIL] Client Component calls external API directly (fetch/axios/ky/got):" -ForegroundColor Red
+    Write-Host "[FAIL] Client Component calls external API directly (must go through app/api/ or Server Component):" -ForegroundColor Red
     $rule1Violations | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     $ErrorsCount++
 } else {
@@ -60,6 +61,7 @@ if ($rule1Violations.Count -gt 0) {
 
 # -------------------------------------------------------------------
 # RULE 2: Secret environment variables exposed to client
+# Detects non-NEXT_PUBLIC_ and non-NODE_ENV process.env references
 # -------------------------------------------------------------------
 Write-Host "`n[RULE 2] Checking secret env vars exposed to Client Components..." -ForegroundColor White
 
@@ -69,75 +71,85 @@ foreach ($f in $clientFiles) {
     $lineNum = 0
     foreach ($line in $lines) {
         $lineNum++
-        if ($line -match "process\.env\.([A-Z0-9_]+)" -and $line -notmatch "NEXT_PUBLIC_") {
-            $rule2Violations += "$($f.FullName):$lineNum $line"
+        if ($line -match "process\.env\.([A-Z0-9_]+)") {
+            $varName = $matches[1]
+            if ($varName -notmatch "^NEXT_PUBLIC_" -and $varName -ne "NODE_ENV") {
+                $rule2Violations += "$($f.FullName):$lineNum $line"
+            }
         }
     }
 }
 
 if ($rule2Violations.Count -gt 0) {
-    Write-Host "[WARN] Client Component references non-public env variables:" -ForegroundColor Yellow
-    $rule2Violations | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
-    $WarningsCount++
+    Write-Host "[FAIL] Client Component references secret env variables (lacks NEXT_PUBLIC_ prefix):" -ForegroundColor Red
+    $rule2Violations | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    $ErrorsCount++
 } else {
     Write-Host "[PASS] No secret env variables detected in Client Components." -ForegroundColor Green
 }
 
 # -------------------------------------------------------------------
 # RULE 3: TypeScript 'any' type usage
+# Detects ': any', 'as any', '<any>', 'any[]', 'Promise<any>'
 # -------------------------------------------------------------------
 Write-Host "`n[RULE 3] Checking for TypeScript 'any' type usage..." -ForegroundColor White
 
-$tsFiles = Get-ChildItem -Path "src" -Recurse -Include *.ts, *.tsx -ErrorAction SilentlyContinue
+$tsFiles = Get-ChildItem -Path "src" -Recurse -Include *.ts, *.tsx -ErrorAction SilentlyContinue | Where-Object {
+    $_.FullName -notmatch "(__tests__|\.test\.|\.spec\.|\.d\.ts$)"
+}
 $rule3Violations = @()
 foreach ($f in $tsFiles) {
     $lines = Get-Content $f.FullName -ErrorAction SilentlyContinue
     $lineNum = 0
     foreach ($line in $lines) {
         $lineNum++
-        if ($line -match ":\s*any\b" -and $line -notmatch "eslint-disable" -and $line -notmatch "@ts-ignore") {
+        if ($line -match "(:\s*any\b|as\s+any\b|<any>|any\[\]|Promise<any>)" -and $line -notmatch "eslint-disable" -and $line -notmatch "@ts-ignore") {
             $rule3Violations += "$($f.FullName):$lineNum $line"
         }
     }
 }
 
 if ($rule3Violations.Count -gt 0) {
-    Write-Host "[WARN] 'any' type usage found (prefer 'unknown' or specific types):" -ForegroundColor Yellow
-    $rule3Violations | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
-    $WarningsCount++
+    Write-Host "[FAIL] 'any' type usage found (prefer 'unknown' or specific types):" -ForegroundColor Red
+    $rule3Violations | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    $ErrorsCount++
 } else {
     Write-Host "[PASS] No explicit 'any' types found." -ForegroundColor Green
 }
 
 # -------------------------------------------------------------------
 # RULE 4: Direct DB access bypassing services/ layer
-# Detects: Supabase, Prisma, Drizzle, Knex direct calls in
-#          components/ or app/ (outside services/)
+# Detects: Supabase, Prisma, Drizzle, Knex direct calls anywhere
+#          outside src/services/ and src/lib/ (DB client initialization)
 # -------------------------------------------------------------------
 Write-Host "`n[RULE 4] Checking direct DB access bypassing services layer..." -ForegroundColor White
 
-$compFiles = Get-ChildItem -Path "src/components", "src/app" -Recurse -Include *.ts, *.tsx, *.js, *.jsx -ErrorAction SilentlyContinue
-$rule4Violations = @()
-foreach ($f in $compFiles) {
-    $normalized = $f.FullName.Replace("\", "/")
-    if ($normalized -match "/services/") { continue }
-    $c = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
-    # Supabase: supabase.from()
-    $hasSupabase = $c -match "supabase\.from\("
-    # Prisma: prisma.<model>. or new PrismaClient()
-    $hasPrisma   = $c -match "(prisma\.[a-zA-Z]+\.|new PrismaClient\()"
-    # Drizzle: db.select() / db.insert() / db.update() / db.delete()
-    $hasDrizzle  = $c -match "db\.(select|insert|update|delete)\("
-    # Knex: knex('<table>')
-    $hasKnex     = $c -match "knex\(['"`"]"
+$allCodeFiles = Get-ChildItem -Path "src" -Recurse -Include *.ts, *.tsx, *.js, *.jsx -ErrorAction SilentlyContinue | Where-Object {
+    $normalized = $_.FullName.Replace("\", "/")
+    $normalized -notmatch "/services/" -and 
+    $normalized -notmatch "/lib/(supabase|prisma|db|database|drizzle)/" -and
+    $normalized -notmatch "(__tests__|\.test\.|\.spec\.)"
+}
 
-    if ($hasSupabase -or $hasPrisma -or $hasDrizzle -or $hasKnex) {
-        $rule4Violations += $f.FullName
+$rule4Violations = @()
+foreach ($f in $allCodeFiles) {
+    $lines = Get-Content $f.FullName -ErrorAction SilentlyContinue
+    $lineNum = 0
+    foreach ($line in $lines) {
+        $lineNum++
+        $hasSupabase = $line -match "supabase\.from\("
+        $hasPrisma   = $line -match "(prisma\.[a-zA-Z]+\.|new PrismaClient\()"
+        $hasDrizzle  = $line -match "db\.(select|insert|update|delete)\("
+        $hasKnex     = $line -match "knex\(['`"]"
+
+        if ($hasSupabase -or $hasPrisma -or $hasDrizzle -or $hasKnex) {
+            $rule4Violations += "$($f.FullName):$lineNum $line"
+        }
     }
 }
 
 if ($rule4Violations.Count -gt 0) {
-    Write-Host "[FAIL] Direct DB access found in components/pages (use services/ layer):" -ForegroundColor Red
+    Write-Host "[FAIL] Direct DB access found outside services/ layer (Supabase/Prisma/Drizzle/Knex):" -ForegroundColor Red
     $rule4Violations | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     $ErrorsCount++
 } else {
@@ -151,7 +163,6 @@ Write-Host "`n[RULE 5] Checking stray console.log statements..." -ForegroundColo
 
 $rule5Violations = @()
 foreach ($f in $tsFiles) {
-    if ($f.FullName -match "(__tests__|\.test\.|\.spec\.)") { continue }
     $lines = Get-Content $f.FullName -ErrorAction SilentlyContinue
     $lineNum = 0
     foreach ($line in $lines) {

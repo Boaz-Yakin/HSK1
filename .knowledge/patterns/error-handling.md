@@ -45,7 +45,18 @@ export class NotFoundError extends AppError {
 }
 ```
 
-## API Route에서 에러 처리
+## API Route 및 Service 레이어 에러 연동 (Result 패턴)
+
+Service 레이어는 예외를 던지지 않고 `Result<T, AppError>`를 반환하며, API Route 또는 Server Action에서 `handleApiError`를 통해 일관된 HTTP 응답으로 변환합니다.
+
+```typescript
+// types/result.ts
+import { AppError } from './errors'
+
+export type Result<T, E = AppError> =
+  | { success: true; data: T }
+  | { success: false; error: E }
+```
 
 ```typescript
 // lib/api/error-handler.ts
@@ -65,7 +76,7 @@ export function handleApiError(error: unknown) {
   // Sentry.captureException(error)
   
   return NextResponse.json(
-    { error: 'Internal server error' },
+    { error: 'Internal server error', code: 'INTERNAL_ERROR' },
     { status: 500 }
   )
 }

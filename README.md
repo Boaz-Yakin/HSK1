@@ -29,11 +29,15 @@ AI 에이전트(Antigravity, Gemini Pro, Claude Code, Cursor 등)가 프로젝�
 │   ├── README.md            # 지식 인덱스
 │   ├── patterns/            # 검증된 코드 패턴 레퍼런스 (API, Service 등)
 │   └── gotchas/             # 실전 함정 & 주의사항 (Hydration, RLS, Server-Client 경계)
-└── scripts/
-    ├── validate-arch.ps1    # 아키텍처 규칙 위반 자동 검사 (Windows PowerShell)
-    ├── sync-docs.ps1        # 문서 일관성 검사 (Windows PowerShell)
-    ├── validate-arch.sh     # 아키텍처 규칙 위반 자동 검사 (Linux / macOS / Bash)
-    └── sync-docs.sh         # 문서 일관성 검사 (Linux / macOS / Bash)
+├── scripts/
+│   ├── init-project.ps1     # 새 프로젝트 템플릿 초기화 & 디렉토리 생성 (Windows PowerShell)
+│   ├── init-project.sh      # 새 프로젝트 템플릿 초기화 & 디렉토리 생성 (Linux / macOS / Bash)
+│   ├── validate-arch.ps1    # 아키텍처 규칙 위반 자동 검사 (Windows PowerShell)
+│   ├── sync-docs.ps1        # 문서 일관성 검사 (Windows PowerShell)
+│   ├── validate-arch.sh     # 아키텍처 규칙 위반 자동 검사 (Linux / macOS / Bash)
+│   └── sync-docs.sh         # 문서 일관성 검사 (Linux / macOS / Bash)
+└── .github/workflows/
+    └── validate.yml         # GitHub Actions 자동 검증 CI 파이프라인
 ```
 
 ---
@@ -93,7 +97,15 @@ bash scripts/sync-docs.sh
 ## 새 프로젝트에 적용하는 방법
 
 1. **이 레포를 복사하거나 템플릿으로 생성한다.**
-2. **`CLAUDE.md` / `GEMINI.md`의 기술 스택 섹션을 실제 프로젝트로 업데이트한다.**
-3. **`docs/01_PRD.md`부터 순서대로 작성한다.**
-4. **AI 에이전트에게 "docs와 가이드 문서를 읽고 시작해"라고 지시한다.**
-5. 개발 중 새로운 패턴이나 함정 발견 시 `.knowledge/` 폴더에 지속적으로 축적한다.
+2. **초기화 스크립트를 실행하여 프로젝트명과 디렉토리 구조를 자동 세팅한다:**
+   ```bash
+   # Windows PowerShell
+   powershell -ExecutionPolicy Bypass -File scripts/init-project.ps1 -ProjectName "내프로젝트" -Author "작성자"
+
+   # Linux / macOS / Bash
+   bash scripts/init-project.sh "내프로젝트" "작성자"
+   ```
+3. **`CLAUDE.md` / `GEMINI.md`의 기술 스택 섹션을 프로젝트에 맞게 확인/조정한다.**
+4. **`docs/01_PRD.md`부터 순서대로 기획 및 요구사항을 작성한다.**
+5. **AI 에이전트에게 "docs 문서를 읽고 시작해"라고 지시한다.**
+6. 개발 중 새로운 패턴이나 함정 발견 시 `.knowledge/` 폴더에 지속적으로 축적한다.

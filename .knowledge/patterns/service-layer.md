@@ -7,30 +7,33 @@
 
 ```typescript
 // services/{resource}.service.ts
+import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { AppError, NotFoundError } from '@/types/errors'
 import type { {Resource}, Create{Resource}Input, Update{Resource}Input } from '@/types/{resource}'
 
 // Result 타입 패턴 (에러를 throw 대신 반환)
-type Result<T, E = Error> = 
+export type Result<T, E = AppError> = 
   | { success: true; data: T }
   | { success: false; error: E }
 
 export const {Resource}Service = {
   
   async findById(id: string): Promise<Result<{Resource}>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data, error } = await supabase
       .from('{table_name}')
       .select('*')
       .eq('id', id)
       .single()
     
-    if (error) return { success: false, error: new Error(error.message) }
+    if (error) return { success: false, error: new AppError(error.message, 'DB_ERROR', 500) }
+    if (!data) return { success: false, error: new NotFoundError('{Resource}') }
     return { success: true, data }
   },
 
-  async findMany(userId: string, options?: { limit?: number; page?: number }) {
-    const supabase = createClient()
+  async findMany(userId: string, options?: { limit?: number; page?: number }): Promise<Result<{ items: {Resource}[]; total: number }>> {
+    const supabase = await createClient()
     const { limit = 20, page = 1 } = options ?? {}
     
     const { data, error, count } = await supabase
@@ -40,24 +43,24 @@ export const {Resource}Service = {
       .range((page - 1) * limit, page * limit - 1)
       .order('created_at', { ascending: false })
     
-    if (error) return { success: false, error: new Error(error.message) }
-    return { success: true, data, total: count ?? 0 }
+    if (error) return { success: false, error: new AppError(error.message, 'DB_ERROR', 500) }
+    return { success: true, data: { items: data ?? [], total: count ?? 0 } }
   },
 
   async create(input: Create{Resource}Input, userId: string): Promise<Result<{Resource}>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data, error } = await supabase
       .from('{table_name}')
       .insert({ ...input, user_id: userId })
       .select()
       .single()
     
-    if (error) return { success: false, error: new Error(error.message) }
+    if (error) return { success: false, error: new AppError(error.message, 'DB_ERROR', 500) }
     return { success: true, data }
   },
 
   async update(id: string, input: Update{Resource}Input, userId: string): Promise<Result<{Resource}>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data, error } = await supabase
       .from('{table_name}')
       .update({ ...input, updated_at: new Date().toISOString() })
@@ -66,20 +69,20 @@ export const {Resource}Service = {
       .select()
       .single()
     
-    if (error) return { success: false, error: new Error(error.message) }
-    if (!data) return { success: false, error: new Error('Not found or unauthorized') }
+    if (error) return { success: false, error: new AppError(error.message, 'DB_ERROR', 500) }
+    if (!data) return { success: false, error: new NotFoundError('{Resource}') }
     return { success: true, data }
   },
 
   async delete(id: string, userId: string): Promise<Result<void>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { error } = await supabase
       .from('{table_name}')
       .delete()
       .eq('id', id)
       .eq('user_id', userId)  // 소유권 검증
     
-    if (error) return { success: false, error: new Error(error.message) }
+    if (error) return { success: false, error: new AppError(error.message, 'DB_ERROR', 500) }
     return { success: true, data: undefined }
   }
 }

@@ -10,16 +10,29 @@ Write-Host "  Documentation Consistency Validation" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # -------------------------------------------------------------------
-# CHECK 1: PRD required sections
+# Helper: Count unfilled template placeholders
+# Excludes curly braces in code blocks
+# -------------------------------------------------------------------
+function Get-PlaceholderCount([string]$content) {
+    if ([string]::IsNullOrEmpty($content)) { return 0 }
+    $noCode = [regex]::Replace($content, '(?s)```.*?```', '')
+    $matches = [regex]::Matches($noCode, '\{[^{}\r\n]{2,}\}')
+    return $matches.Count
+}
+
+# -------------------------------------------------------------------
+# CHECK 1: PRD required sections and placeholders
 # -------------------------------------------------------------------
 Write-Host "`n[CHECK 1] Validating PRD (docs/01_PRD.md)..." -ForegroundColor White
 
 $prdFile = "docs/01_PRD.md"
+$prdFeatures = @()
+
 if (-not (Test-Path $prdFile)) {
     Write-Host "[WARN] PRD file missing: $prdFile" -ForegroundColor Yellow
     $WarningsCount++
 } else {
-    $prdContent = Get-Content $prdFile -Raw
+    $prdContent = Get-Content $prdFile -Raw -Encoding UTF8
     $sections = @("Problem Statement", "Target Users", "Core Features", "Out of Scope", "Success Metrics")
     foreach ($sec in $sections) {
         if ($prdContent -match $sec) {
@@ -30,10 +43,20 @@ if (-not (Test-Path $prdFile)) {
         }
     }
     
-    $placeholderMatches = [regex]::Matches($prdContent, "\{예:")
-    if ($placeholderMatches.Count -gt 5) {
-        Write-Host "  [WARN] PRD has $($placeholderMatches.Count) placeholder items to fill in." -ForegroundColor Yellow
+    $featMatches = [regex]::Matches($prdContent, "F-\d{3}")
+    foreach ($m in $featMatches) {
+        if ($prdFeatures -notcontains $m.Value) {
+            $prdFeatures += $m.Value
+        }
+    }
+    Write-Host "  [INFO] Extracted PRD Features: $($prdFeatures -join ', ')" -ForegroundColor Gray
+
+    $phCount = Get-PlaceholderCount $prdContent
+    if ($phCount -gt 3) {
+        Write-Host "  [WARN] PRD has $phCount unfilled template placeholder(s) to complete." -ForegroundColor Yellow
         $WarningsCount++
+    } else {
+        Write-Host "  [PASS] PRD placeholders within acceptable range ($phCount)." -ForegroundColor Green
     }
 }
 
@@ -47,21 +70,21 @@ if (-not (Test-Path $adrFile)) {
     Write-Host "[WARN] ADR file missing: $adrFile" -ForegroundColor Yellow
     $WarningsCount++
 } else {
-    $adrContent = Get-Content $adrFile -Raw
+    $adrContent = Get-Content $adrFile -Raw -Encoding UTF8
     $adrMatches = [regex]::Matches($adrContent, "(?m)^## ADR-")
     Write-Host "  [INFO] Found $($adrMatches.Count) ADR item(s)." -ForegroundColor Gray
     
-    $placeholderAdrs = [regex]::Matches($adrContent, "\{예:")
-    if ($placeholderAdrs.Count -gt 5) {
-        Write-Host "  [WARN] ADR has $($placeholderAdrs.Count) unfilled placeholder item(s) — fill in actual decisions." -ForegroundColor Yellow
+    $phCount = Get-PlaceholderCount $adrContent
+    if ($phCount -gt 5) {
+        Write-Host "  [WARN] ADR has $phCount unfilled placeholder(s) - fill in actual decisions." -ForegroundColor Yellow
         $WarningsCount++
     } else {
-        Write-Host "  [PASS] ADR placeholders within acceptable range." -ForegroundColor Green
+        Write-Host "  [PASS] ADR placeholders within acceptable range ($phCount)." -ForegroundColor Green
     }
 }
 
 # -------------------------------------------------------------------
-# CHECK 3: TRD status tracking
+# CHECK 3: TRD status tracking & PRD mapping
 # -------------------------------------------------------------------
 Write-Host "`n[CHECK 3] Checking TRD status (docs/03_TRD.md)..." -ForegroundColor White
 
@@ -70,7 +93,7 @@ if (-not (Test-Path $trdFile)) {
     Write-Host "[WARN] TRD file missing: $trdFile" -ForegroundColor Yellow
     $WarningsCount++
 } else {
-    $trdContent = Get-Content $trdFile -Raw
+    $trdContent = Get-Content $trdFile -Raw -Encoding UTF8
     $proposedCount = [regex]::Matches($trdContent, "Status.*Proposed").Count
     $inProgressCount = [regex]::Matches($trdContent, "Status.*In Progress").Count
     $doneCount = [regex]::Matches($trdContent, "Status.*Done").Count
@@ -81,10 +104,19 @@ if (-not (Test-Path $trdFile)) {
         Write-Host "  [WARN] Too many features in 'In Progress' state simultaneously (Recommended WIP <= 3)." -ForegroundColor Yellow
         $WarningsCount++
     }
+
+    if ($prdFeatures.Count -gt 0) {
+        foreach ($fid in $prdFeatures) {
+            if ($trdContent -notmatch [regex]::Escape($fid)) {
+                Write-Host "  [WARN] PRD feature '$fid' is not yet referenced in TRD." -ForegroundColor Yellow
+                $WarningsCount++
+            }
+        }
+    }
 }
 
 # -------------------------------------------------------------------
-# CHECK 4: task.md tracking
+# CHECK 4: task.md tracking & PRD feature mapping
 # -------------------------------------------------------------------
 Write-Host "`n[CHECK 4] Checking task.md tracker..." -ForegroundColor White
 
@@ -93,12 +125,27 @@ if (-not (Test-Path $taskFile)) {
     Write-Host "  [WARN] task.md missing." -ForegroundColor Yellow
     $WarningsCount++
 } else {
-    $taskContent = Get-Content $taskFile -Raw
+    $taskContent = Get-Content $taskFile -Raw -Encoding UTF8
     $todoCount = [regex]::Matches($taskContent, "\[ \]").Count
     $inProgCount = [regex]::Matches($taskContent, "\[/\]").Count
     $doneTCount = [regex]::Matches($taskContent, "\[x\]").Count
     
     Write-Host "  [INFO] Todo: $todoCount | In Progress: $inProgCount | Done: $doneTCount" -ForegroundColor Gray
+
+    if ($prdFeatures.Count -gt 0) {
+        $missingInTask = @()
+        foreach ($fid in $prdFeatures) {
+            if ($taskContent -notmatch [regex]::Escape($fid)) {
+                $missingInTask += $fid
+            }
+        }
+        if ($missingInTask.Count -gt 0) {
+            Write-Host "  [WARN] Features missing in task.md: $($missingInTask -join ', ')" -ForegroundColor Yellow
+            $WarningsCount++
+        } else {
+            Write-Host "  [PASS] All PRD features tracked in task.md." -ForegroundColor Green
+        }
+    }
 }
 
 # -------------------------------------------------------------------

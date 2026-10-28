@@ -91,7 +91,9 @@
       "CLAUDE.md",           // #1: CRITICAL 원칙 & 아키텍처 규칙
       "docs/01_PRD.md",      // #2: MVP 스코프 확인 (Out of Scope 방지)
       "docs/02_ADR.md",      // #3: 기술 스택 & 아키텍처 결정
-      "docs/03_TRD.md"       // #4: 기능별 세부 설계 확인
+      "docs/03_TRD.md",      // #4: 기능별 세부 설계 확인
+      "docs/04_UI_GUIDE.md", // #5: UI 컴포넌트 디자인 토큰 및 가이드
+      ".knowledge/README.md" // #6: 패턴 및 Gotchas 지식 베이스
     ],
 
     // QA 단계에서 자동 실행할 검증 커맨드 (순서 중요)

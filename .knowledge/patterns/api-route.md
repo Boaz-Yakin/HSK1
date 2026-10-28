@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { {ServiceName}Service } from '@/services/{service}.service'
+import { handleApiError } from '@/lib/api/error-handler'
 
 // 1. 요청 스키마 정의 (Zod)
 const RequestSchema = z.object({
@@ -19,8 +20,8 @@ const RequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // 2. 인증 검증 (보호된 라우트의 경우)
-    const supabase = createClient()
+    // 2. 인증 검증 (보호된 라우트의 경우 - Next.js 15: await createClient())
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,19 +37,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. 비즈니스 로직 (Service 레이어 위임)
+    // 4. 비즈니스 로직 (Service 레이어 위임 & Result 패턴 처리)
     const result = await {ServiceName}Service.create(parsed.data, user.id)
+    if (!result.success) {
+      return handleApiError(result.error)
+    }
 
     // 5. 성공 응답
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json(result.data, { status: 201 })
 
   } catch (error) {
     // 6. 예외 처리
-    console.error('[API ERROR] POST /api/{resource}:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 ```

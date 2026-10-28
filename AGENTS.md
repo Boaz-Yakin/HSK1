@@ -58,3 +58,37 @@ src/
 4. **코드 구현**: TRD의 API 시그니처와 에러 처리 정책을 준수한다.
 5. **QA 자가 검토**: 검증 스크립트 실행 (`scripts/validate-arch.ps1` 또는 `scripts/validate-arch.sh`).
 6. **문서 업데이트**: 설계 변경 시 해당 문서(PRD/ADR/TRD) 및 `task.md`를 업데이트한다.
+
+---
+
+## 명령어
+
+```bash
+npm run dev          # 개발 서버 실행
+npm run build        # 프로덕션 빌드
+npm run lint         # ESLint + Prettier 검사
+npm run test         # 유닛 테스트 (Vitest)
+npm run test:e2e     # E2E 테스트 (Playwright)
+npm run type-check   # TypeScript 타입 검사
+
+# 문서 & 아키텍처 검증 (Windows PowerShell)
+powershell -ExecutionPolicy Bypass -File scripts/validate-arch.ps1
+powershell -ExecutionPolicy Bypass -File scripts/sync-docs.ps1
+
+# 문서 & 아키텍처 검증 (Linux / macOS / Git Bash)
+bash scripts/validate-arch.sh   # 아키텍처 규칙 준수 검사
+bash scripts/sync-docs.sh       # 문서 간 일관성 확인
+```
+
+---
+
+## 커밋 메시지 규칙 (Conventional Commits)
+
+```
+feat: 새 기능
+fix: 버그 수정
+docs: 문서 변경 (PRD/ADR/TRD 포함)
+refactor: 리팩토링 (기능 변경 없음)
+test: 테스트 추가/수정
+chore: 빌드 설정, 패키지 등 기타 변경
+```
