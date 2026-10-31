@@ -26,9 +26,10 @@
 ## 3. Typography (타이포그래피)
 
 - **한자 폰트**: `"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif`
-- **단어 표기 (Word Hero)**: `text-5xl font-bold` (한자 획이 뭉개지지 않도록 대형 사이즈)
-- **병음 표기 (Pinyin)**: `text-xl font-medium text-rose-600 tracking-wide`
-- **문장 표기 (Sentence)**: `text-2xl font-semibold leading-relaxed`
+- **단어 표기 (Word Hero)**: `text-7xl sm:text-8xl md:text-9xl font-black` (화면 가득 시원시원한 초대형 폰트)
+- **병음 표기 (Pinyin)**: `text-3xl sm:text-4xl font-extrabold text-rose-600 tracking-wider`
+- **문장 표기 (Sentence)**: `text-3xl sm:text-4xl font-black leading-relaxed tracking-wide`
+- **문장 병음 표기 (Sentence Pinyin)**: `text-lg sm:text-xl font-bold text-rose-600`
 
 ---
 

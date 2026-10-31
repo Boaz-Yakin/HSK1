@@ -26,23 +26,23 @@ export const BreakdownList: React.FC<BreakdownListProps> = ({
             onClick={() =>
               onPlayBreakdown(item.audioSrc, `${item.hanzi} (${item.pinyin})`, item.id)
             }
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all ${
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border text-left transition-all ${
               isPlaying
                 ? "bg-rose-50 border-rose-300 ring-2 ring-rose-100 shadow-xs"
                 : "bg-white hover:bg-slate-50 border-slate-200"
             }`}
           >
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black text-slate-900 leading-snug">
+              <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 leading-snug font-sans">
                   {item.hanzi}
                 </span>
-                <span className="text-xs font-bold text-rose-600 leading-snug">
+                <span className="text-sm font-bold text-rose-600 leading-snug">
                   {item.pinyin}
                 </span>
               </div>
               {item.english && (
-                <span className="text-[11px] font-medium text-slate-600 max-w-[150px] truncate leading-tight mt-0.5">
+                <span className="text-xs font-semibold text-slate-600 max-w-[160px] truncate leading-tight mt-0.5">
                   {item.english}
                 </span>
               )}

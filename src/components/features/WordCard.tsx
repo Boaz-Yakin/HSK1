@@ -24,25 +24,25 @@ export const WordCard: React.FC<WordCardProps> = ({
         </span>
       )}
 
-      {/* 대표 한자 - 시인성 극대화 대형 폰트 */}
-      <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-wide my-2 font-sans">
+      {/* 대표 한자 - 압도적인 점보 폰트 */}
+      <h1 className="text-7xl sm:text-8xl md:text-9xl font-black text-slate-950 tracking-normal my-2 font-sans select-text">
         {item.word}
       </h1>
 
-      {/* 병음 (성조 표시) - 선명한 크기 */}
-      <span className="text-2xl md:text-3xl font-bold text-rose-600 tracking-wider mb-2">
+      {/* 병음 (성조 표시) - 선명하고 큼직한 발음 */}
+      <span className="text-3xl sm:text-4xl font-extrabold text-rose-600 tracking-wider mb-2">
         {item.pinyin}
       </span>
 
       {/* 의미 / 해석 */}
-      <p className="text-base md:text-lg font-medium text-slate-700 text-center mb-4">
+      <p className="text-lg md:text-xl font-semibold text-slate-700 text-center mb-4">
         {item.english}
       </p>
 
       {/* 원어민 강사 육성 반복 듣기 버튼 */}
       <button
         onClick={onPlayWord}
-        className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold transition-all shadow-sm ${
+        className={`flex items-center gap-2.5 px-7 py-3.5 rounded-full text-base font-bold transition-all shadow-sm ${
           isPlaying
             ? "bg-rose-600 text-white ring-4 ring-rose-100 animate-pulse"
             : "bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700"
