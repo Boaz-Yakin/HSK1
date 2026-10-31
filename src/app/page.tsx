@@ -166,12 +166,12 @@ export default function HomePage() {
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Stroke Order & Handwriting
               </span>
-              <h2 className="text-xl font-black text-slate-800">
-                {currentItem.word} <span className="text-rose-600 text-base">{currentItem.pinyin}</span>
+              <h2 className="text-3xl font-black text-slate-900 my-1 font-sans">
+                {currentItem.word} <span className="text-rose-600 text-xl font-bold ml-1">{currentItem.pinyin}</span>
               </h2>
             </div>
 
-            <HanziWriterCanvas word={currentItem.word} size={230} />
+            <HanziWriterCanvas word={currentItem.word} size={260} />
           </div>
         )}
       </main>

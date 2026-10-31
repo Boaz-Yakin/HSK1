@@ -40,18 +40,18 @@ export const SentenceCard: React.FC<SentenceCardProps> = ({
         </button>
       </div>
 
-      {/* 중국어 문장 */}
-      <div className="text-xl font-bold text-slate-900 leading-relaxed mb-1">
+      {/* 중국어 문장 - 대형 시인성 폰트 */}
+      <div className="text-2xl md:text-3xl font-black text-slate-900 leading-snug mb-2 tracking-wide font-sans">
         {item.sentence}
       </div>
 
-      {/* 문장 병음 */}
-      <div className="text-xs font-medium text-rose-600 mb-2 tracking-wide">
+      {/* 문장 병음 - 또렷하고 읽기 쉬운 크기 */}
+      <div className="text-base md:text-lg font-semibold text-rose-600 mb-3 tracking-wide">
         {item.sentencePinyin}
       </div>
 
       {/* 영어 번역 */}
-      <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl mb-4 border border-slate-100">
+      <div className="text-sm font-medium text-slate-700 bg-slate-50 p-3 rounded-xl mb-4 border border-slate-100">
         {item.sentenceEnglish}
       </div>
 

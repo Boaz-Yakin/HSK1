@@ -146,15 +146,15 @@ export const DayDrawer: React.FC<DayDrawerProps> = ({
                     </span>
 
                     <div className="flex flex-col">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-bold text-slate-900">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-black text-slate-900 font-sans">
                           {item.word}
                         </span>
-                        <span className="text-xs font-semibold text-rose-600">
+                        <span className="text-sm font-bold text-rose-600">
                           {item.pinyin}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-500 truncate max-w-[180px]">
+                      <span className="text-xs text-slate-600 truncate max-w-[200px]">
                         {item.english}
                       </span>
                     </div>

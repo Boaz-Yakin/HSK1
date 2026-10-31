@@ -24,7 +24,7 @@ interface HanziWriterCanvasProps {
 
 export const HanziWriterCanvas: React.FC<HanziWriterCanvasProps> = ({
   word,
-  size = 220,
+  size = 260,
 }) => {
   // 한자만 추출 (특수문자 제외)
   const characters = Array.from(word).filter((char) =>
@@ -128,9 +128,9 @@ export const HanziWriterCanvas: React.FC<HanziWriterCanvasProps> = ({
 
   return (
     <div className="flex flex-col items-center bg-white rounded-2xl p-4 shadow-sm border border-slate-100 w-full">
-      {/* 여러 글자일 때 글자 선택 탭 */}
+      {/* 여러 글자일 때 글자 선택 탭 - 큼직한 버튼 */}
       {characters.length > 1 && (
-        <div className="flex gap-2 mb-3 bg-slate-100 p-1 rounded-xl">
+        <div className="flex gap-2 mb-3 bg-slate-100 p-1.5 rounded-xl">
           {characters.map((char, index) => (
             <button
               key={`${char}-${index}`}
@@ -138,10 +138,10 @@ export const HanziWriterCanvas: React.FC<HanziWriterCanvasProps> = ({
                 setSelectedCharIndex(index);
                 setIsQuizMode(false);
               }}
-              className={`px-4 py-1.5 rounded-lg text-lg font-bold transition-all ${
+              className={`px-5 py-2 rounded-xl text-2xl font-black transition-all ${
                 selectedCharIndex === index
                   ? "bg-rose-600 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  : "text-slate-700 hover:text-slate-900"
               }`}
             >
               {char}
